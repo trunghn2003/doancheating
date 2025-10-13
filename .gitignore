@@ -1,0 +1,6 @@
+.venv/
+Face_RecognitionApp/__pycache__/
+Face_RecognitionApp/*.pyc
+Face_RecognitionApp/*.pkl
+Face_RecognitionApp/*sav
+Face_Recognition_Training/FaceDataset/*

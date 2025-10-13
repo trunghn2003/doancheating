@@ -1,0 +1,29 @@
+albumentations
+# vzone
+# face-detection @ git+https://github.com/elliottzheng/face-detection@786fbab7095623c348e251f1f0a8b323721c6a84
+image
+imutils
+ipython
+opencv-python
+keras
+keras-facenet
+l2cs @ git+https://github.com/edavalosanaya/L2CS-Net.git@4a0f978d5b4c426a7d37022d8c927d6ea031dcb6
+matplotlib
+matplotlib-inline
+mediapipe
+mtcnn
+numpy
+pandas
+pillow
+preprocessing
+requests
+scikit-image
+scikit-learn
+screeninfo
+tensorflow
+torch
+torchvision
+tqdm
+utils
+# insightface @ https://github.com/Gourieff/Assets/raw/main/Insightface/insightface-0.7.3-cp312-cp312-win_amd64.whl#sha256=4e58a504433ba5a500d48328689
+onnxruntime
