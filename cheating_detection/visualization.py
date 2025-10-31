@@ -90,11 +90,14 @@ def _format_face_label(face: Dict[str, Any]) -> str:
     label = face.get("label") or "Unknown"
     confidence = face.get("confidence")
     orientation = face.get("orientation")
+    gaze = face.get("gaze")
     parts = [label]
     if confidence is not None:
         parts.append(f"{confidence:.2f}")
     if orientation and orientation != "Straight":
         parts.append(orientation)
+    if gaze and gaze != "Center":
+        parts.append(gaze)
     return " | ".join(parts)
 
 

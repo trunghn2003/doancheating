@@ -15,6 +15,7 @@ from .config import (
     resolve_path,
 )
 from .face_recognition import FaceRecognizer
+from .gaze import EyeGazeEstimator
 from .head_pose import HeadPoseClassifier, HeadPoseThresholds
 from .object_detection import SuspiciousObjectDetector
 from .utils import ensure_uint8
@@ -59,6 +60,7 @@ class CheatingDetectionPipeline:
             self.options.yolo_model_path, watched_classes=self.options.watched_objects
         )
         self.head_pose = HeadPoseClassifier(self.options.head_pose_thresholds)
+        self.eye_gaze = EyeGazeEstimator()
 
     def analyze(self, image_bgr: np.ndarray) -> Dict[str, Any]:
         image = ensure_uint8(image_bgr)
@@ -69,10 +71,23 @@ class CheatingDetectionPipeline:
         flags: List[str] = []
         enriched_faces: List[Dict[str, Any]] = []
 
+        bbox_indices = [
+            (idx, face["bbox"])
+            for idx, face in enumerate(faces)
+            if face.get("bbox")
+        ]
+        gaze_map = {}
+        if bbox_indices:
+            _, bbox_list = zip(*bbox_indices)
+            gaze_estimates = self.eye_gaze.estimate(image, bbox_list)
+            for local_idx, estimate in gaze_estimates.items():
+                face_idx = bbox_indices[local_idx][0]
+                gaze_map[face_idx] = estimate
+
         if not faces:
             flags.append("No face detected")
 
-        for face in faces:
+        for idx, face in enumerate(faces):
             pose = face.get("pose")
             orientation = None
             if pose:
@@ -82,6 +97,18 @@ class CheatingDetectionPipeline:
                     flags.append(
                         f"Head orientation '{orientation}' detected for {face['label']}"
                     )
+            if idx in gaze_map:
+                gaze = gaze_map[idx]
+                face["gaze"] = gaze.direction
+                face["gaze_metrics"] = {
+                    "horizontal_ratio": gaze.horizontal_ratio,
+                    "vertical_ratio": gaze.vertical_ratio,
+                }
+                if gaze.direction != "Center":
+                    flags.append(
+                        f"Gaze {gaze.direction} detected for {face['label']}"
+                    )
+
             confidence = face.get("confidence")
             raw_label = face.get("raw_label")
             if (

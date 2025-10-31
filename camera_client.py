@@ -52,7 +52,11 @@ def process_frame(frame: np.ndarray) -> Tuple[np.ndarray | None, float, dict]:
 
     files = {"file": ("frame.jpg", buffer.tobytes(), "image/jpeg")}
     start = time.time()
-    response = requests.post(API_URL, files=files, timeout=10)
+    try:
+        response = requests.post(API_URL, files=files, timeout=10)
+    except requests.RequestException as exc:
+        print(f"[client] Request failed: {exc}")
+        return None, 0.0, {}
     latency = time.time() - start
     response.raise_for_status()
     data = response.json()
