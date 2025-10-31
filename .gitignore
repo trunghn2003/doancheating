@@ -6,3 +6,7 @@ Face_RecognitionApp/*sav
 Face_Recognition_Training/FaceDataset/*
 
 faceset/
+__pycache__/
+*.pyc
+*.pkl
+*.sav

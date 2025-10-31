@@ -189,23 +189,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-cap.release(); cv2.destroyAllWindows()
+    
     cap.release()
     cv2.destroyAllWindows()
 
-# ============== 6) ADD FACE TO DATABASE (DUMMY) =================
-def add_face_to_database(image_path, name):
-    """
-    Hàm này sẽ tải ảnh từ đường dẫn `image_path`,
-    trích xuất đặc trưng khuôn mặt (sử dụng thư viện như FaceNet),
-    và lưu trữ vào cơ sở dữ liệu cùng với tên người dùng.
-    (Đây chỉ là một ví dụ đơn giản, bạn cần thay thế bằng logic thực tế)
-    """
-    print(f"Đã thêm khuôn mặt của {name} từ ảnh {image_path} vào cơ sở dữ liệu.")
-
-# ============== 7) MAIN ENTRY POINT ============================
-if __name__ == "__main__":
-    print("Press 'q' to quit.")
-    # Ví dụ sử dụng hàm add_face_to_database (cần thay đổi logic bên trong)
-    # add_face_to_database("path/to/your/image.jpg", "Your Name")
-    main()
