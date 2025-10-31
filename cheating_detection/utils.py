@@ -5,8 +5,7 @@ Utility helpers for image handling and result formatting.
 from __future__ import annotations
 
 import base64
-import io
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List
 
 import cv2
 import numpy as np
@@ -66,3 +65,13 @@ def to_float(value: Any) -> float:
     Convert numeric-like values to primitive float.
     """
     return float(value)
+
+
+def encode_image_to_base64(image: np.ndarray, fmt: str = "jpg") -> str:
+    """
+    Encode an image to a base64 string using the provided format.
+    """
+    success, buffer = cv2.imencode(f".{fmt}", image)
+    if not success:
+        raise ValueError("Failed to encode image to base64")
+    return base64.b64encode(buffer.tobytes()).decode("ascii")

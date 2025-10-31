@@ -9,8 +9,12 @@ from typing import Any, Dict
 
 from flask import Flask, jsonify, request
 
-from cheating_detection import load_default_pipeline
-from cheating_detection.utils import decode_image_from_base64, decode_image_from_bytes
+from cheating_detection import annotate_detections, load_default_pipeline
+from cheating_detection.utils import (
+    decode_image_from_base64,
+    decode_image_from_bytes,
+    encode_image_to_base64,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,8 +29,10 @@ def health() -> Any:
 
 @app.route("/api/detect", methods=["POST"])
 def detect() -> Any:
+
+    payload = request.get_json(silent=True) if request.is_json else None
     try:
-        image = _extract_image_payload()
+        image = _extract_image_payload(payload)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
@@ -36,10 +42,17 @@ def detect() -> Any:
         LOGGER.exception("Cheating detection failed")
         return jsonify({"error": "Internal detection failure"}), 500
 
+    if _should_return_image(payload):
+        try:
+            annotated = annotate_detections(image, result)
+            result["annotated_image_base64"] = encode_image_to_base64(annotated)
+        except ValueError as exc:
+            LOGGER.warning("Failed to encode annotated image: %s", exc)
+
     return jsonify(result)
 
 
-def _extract_image_payload():
+def _extract_image_payload(payload: Dict[str, Any] | None = None):
     """
     Attempt to load an image from the incoming request.
     """
@@ -49,8 +62,9 @@ def _extract_image_payload():
             raise ValueError("Missing uploaded file")
         return decode_image_from_bytes(file_storage.read())
 
-    if request.is_json:
-        payload: Dict[str, Any] = request.get_json() or {}
+    if payload is None and request.is_json:
+        payload = request.get_json() or {}
+    if payload:
         if "image_base64" in payload:
             return decode_image_from_base64(payload["image_base64"])
         if "image_bytes" in payload:
@@ -124,6 +138,23 @@ def _extract_images():
                 except ValueError as exc:
                     LOGGER.warning("Failed to decode base64 image: %s", exc)
     return images
+
+
+def _should_return_image(payload: Dict[str, Any] | None) -> bool:
+    query_value = request.args.get("return_image")
+    if query_value and query_value.lower() in {"1", "true", "yes"}:
+        return True
+    if request.form:
+        form_value = request.form.get("return_image")
+        if form_value and form_value.lower() in {"1", "true", "yes"}:
+            return True
+    if payload:
+        body_value = payload.get("return_image") or payload.get("annotated")
+        if isinstance(body_value, bool):
+            return body_value
+        if isinstance(body_value, str) and body_value.lower() in {"1", "true", "yes"}:
+            return True
+    return False
 
 
 if __name__ == "__main__":

@@ -36,6 +36,13 @@ curl -X POST http://localhost:8000/api/detect \
   -d '{"image_base64": "<base64-image>"}'
 ```
 
+Include the annotated frame in the response as base64 by setting `return_image=true`:
+
+```bash
+curl -X POST "http://localhost:8000/api/detect?return_image=true" \
+  -F "file=@/path/to/exam-frame.jpg"
+```
+
 ### Add a face to the database
 
 Register a new identity with one or more images:
@@ -59,6 +66,14 @@ curl -X POST http://localhost:8000/api/faces \
 ```
 
 The service stores the mean embedding similarly to the original `Face_Database_Training.ipynb` workflow.
+
+### Live camera client
+
+Launch the helper script to stream from the default webcam and show annotated frames (press `q` to quit):
+
+```bash
+python camera_client.py
+```
 
 ## Output structure
 
