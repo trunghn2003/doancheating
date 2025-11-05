@@ -71,6 +71,12 @@ class CheatingDetectionPipeline:
         flags: List[str] = []
         enriched_faces: List[Dict[str, Any]] = []
 
+        face_count = len(faces)
+        if face_count == 0:
+            flags.append("No face detected")
+        elif face_count > 1:
+            flags.append(f"Multiple faces detected ({face_count})")
+
         bbox_indices = [
             (idx, face["bbox"])
             for idx, face in enumerate(faces)
@@ -83,9 +89,6 @@ class CheatingDetectionPipeline:
             for local_idx, estimate in gaze_estimates.items():
                 face_idx = bbox_indices[local_idx][0]
                 gaze_map[face_idx] = estimate
-
-        if not faces:
-            flags.append("No face detected")
 
         for idx, face in enumerate(faces):
             pose = face.get("pose")
@@ -132,6 +135,7 @@ class CheatingDetectionPipeline:
             "faces": enriched_faces,
             "objects": objects,
             "flags": flags,
+            "face_count": face_count,
         }
 
 

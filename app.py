@@ -5,21 +5,25 @@ Flask entry-point exposing the cheating detection pipeline as a REST API.
 from __future__ import annotations
 
 import logging
+import uuid
+from pathlib import Path
 from typing import Any, Dict
 
-from flask import Flask, jsonify, request
+import cv2
+from flask import Flask, jsonify, request, url_for
 
 from cheating_detection import annotate_detections, load_default_pipeline
 from cheating_detection.utils import (
     decode_image_from_base64,
     decode_image_from_bytes,
-    encode_image_to_base64,
 )
 
 LOGGER = logging.getLogger(__name__)
 
 app = Flask(__name__)
 PIPELINE = load_default_pipeline()
+ANNOTATED_DIR = Path(app.static_folder) / "annotated"
+ANNOTATED_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.route("/health", methods=["GET"])
@@ -42,12 +46,14 @@ def detect() -> Any:
         LOGGER.exception("Cheating detection failed")
         return jsonify({"error": "Internal detection failure"}), 500
 
-    if _should_return_image(payload):
-        try:
-            annotated = annotate_detections(image, result)
-            result["annotated_image_base64"] = encode_image_to_base64(annotated)
-        except ValueError as exc:
-            LOGGER.warning("Failed to encode annotated image: %s", exc)
+    try:
+        annotated = annotate_detections(image, result)
+        filename = _persist_annotated_image(annotated)
+        result["annotated_image_url"] = url_for(
+            "static", filename=f"annotated/{filename}", _external=True
+        )
+    except ValueError as exc:
+        LOGGER.warning("Failed to persist annotated image: %s", exc)
 
     return jsonify(result)
 
@@ -140,21 +146,17 @@ def _extract_images():
     return images
 
 
-def _should_return_image(payload: Dict[str, Any] | None) -> bool:
-    query_value = request.args.get("return_image")
-    if query_value and query_value.lower() in {"1", "true", "yes"}:
-        return True
-    if request.form:
-        form_value = request.form.get("return_image")
-        if form_value and form_value.lower() in {"1", "true", "yes"}:
-            return True
-    if payload:
-        body_value = payload.get("return_image") or payload.get("annotated")
-        if isinstance(body_value, bool):
-            return body_value
-        if isinstance(body_value, str) and body_value.lower() in {"1", "true", "yes"}:
-            return True
-    return False
+def _persist_annotated_image(image) -> str:
+    """
+    Store the annotated frame on disk and return the relative filename.
+    """
+    success, buffer = cv2.imencode(".jpg", image)
+    if not success:
+        raise ValueError("Failed to encode annotated frame")
+    filename = f"{uuid.uuid4().hex}.jpg"
+    output_path = ANNOTATED_DIR / filename
+    output_path.write_bytes(buffer.tobytes())
+    return filename
 
 
 if __name__ == "__main__":
